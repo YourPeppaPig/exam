@@ -18,5 +18,6 @@ namespace exam2PArt.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<Restaurants> Restaurants { get; set; }
         public DbSet<Cart> Carts { get; set; }
+        public DbSet<User> Users { get; set; }
     }
 }

@@ -9,14 +9,8 @@ namespace exam2PArt.Models
     public class Cart
     {
         [Key]
-        public string Id { get; set; }
-        public string UserId { get; set; }
-        public List<int> DishesId { get; set; }
-        public int Cost { get; set; }
-        public void AddDish(Dishes dish)
-        {
-            DishesId.Add(dish.Id);
-            Cost += dish.CostOfMeal;
-        }
+        public int Id { get; set; }
+        public List<Dishes> Dishes { get; set; }
+        public Restaurants Restaurant { get; set; }
     }
 }

@@ -4,8 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using exam2PArt.Data;
 using exam2PArt.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebSockets.Internal;
 using Microsoft.EntityFrameworkCore;
+
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -13,65 +17,81 @@ namespace exam2PArt.Controllers
 {
     public class DishesController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _dbContext;
+        private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager;
 
-        public DishesController(ApplicationDbContext context)
+        public DishesController(ApplicationDbContext dbContext,
+            UserManager<User> userManager,
+            SignInManager<User> signInManager)
         {
-            _context = context;
+            _dbContext = dbContext;
+            _userManager = userManager;
+            _signInManager = signInManager;
         }
 
-        // GET: Inventories
-        public async Task<IActionResult> Index()
+        [Authorize(Roles = Constants.Admin)]
+        [HttpGet]
+        public IActionResult Create(int id)
         {
-            return View(await _context.DIshes.ToListAsync());
+            return View(new Dishes { Id = id });
         }
 
-        // GET: Dishes/Dish
-        public async Task<IActionResult> Dish(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var dishes = await _context.DIshes
-                .SingleOrDefaultAsync(m => m.Id == id);
-            if (dishes == null)
-            {
-                return NotFound();
-            }
-
-            return View(dishes);
-        }
-
-        // GET: Dishes/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: Dishes/Create
+        [Authorize(Roles = Constants.Admin)]
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Dishes dish)
+        public IActionResult Create(Dishes dish)
         {
-                    _context.DIshes.Add(new Dishes
-                    {
-                        Id = dish.Id,
-                        Name = dish.Name,
-                        CostOfMeal = dish.CostOfMeal,
-                        Description = dish.Description
-                    });
-                   
-            
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-            return View(dish);
+            var rest = _dbContext.Restaurants.FirstOrDefault(x => x.Id == dish.Id);
+            rest.Dishes.Add(dish);
+            _dbContext.SaveChanges();
+            return RedirectToAction("Details", "Restaurant", new { id = rest.Id });
+
         }
 
-        private bool DIshesExists(int id)
+        [Authorize(Roles = Constants.Admin)]
+        public IActionResult Delete(int id, int restId)
         {
-            return _context.DIshes.Any(e => e.Id == id);
+            var dish = _dbContext.DIshes.FirstOrDefault(x => x.Id == id);
+            if (dish != null)
+            {
+                _dbContext.DIshes.Remove(dish);
+                _dbContext.SaveChanges();
+            }
+            return RedirectToAction("Details", "Restaurant", new { id = restId });
         }
+
+        [Authorize(Roles = Constants.User)]
+        public async Task<IActionResult> Add(int id)
+        {
+            var dish = _dbContext.DIshes
+                .Include(x => x.Restaurant)
+                .FirstOrDefault(x => x.Id == id);
+            if (dish == null) return RedirectToAction("Details", "Restaurant", new { id = dish.Restaurant.Id });
+
+            var user = await _dbContext.Users
+                .Include(x => x.Cart)
+                .ThenInclude(x => x.Dishes)
+                .FirstOrDefaultAsync(x => x.Id == _userManager.GetUserId(User));
+
+            if (user.Cart == null || user.Cart.Restaurant.Id != dish.Restaurant.Id)
+            {
+                user.Cart = new Cart
+                {
+                    Dishes = new List<Dishes>
+                {
+                    dish
+                },
+                    Restaurant = dish.Restaurant
+                };
+            }
+
+            else
+            {
+                user.Cart.Dishes.Add(dish);
+            }
+            _dbContext.SaveChanges();
+            return RedirectToAction("Details", "Restaurant", new { id = dish.Restaurant.Id });
+        }
+
     }
 }

@@ -11,5 +11,6 @@ namespace exam2PArt.Models
         public string Name { get; set; }
         public int CostOfMeal { get; set; }
         public string Description { get; set; }
+        public Restaurants Restaurant { get; set; }
     }
 }

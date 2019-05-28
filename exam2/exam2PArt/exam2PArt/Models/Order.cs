@@ -9,9 +9,11 @@ namespace exam2PArt.Models
     public class Order
     {
         [Key]
-        public string Id { get; set; }
-        public string UserId { get; set; }
-        public List<string> DishesId { get; set; }
+        public int Id { get; set; }
+        public User User { get; set; }
+        public List<Dishes> Dishes { get; set; }
         public int FinalPrice { get; set; }
+        public Restaurants Restaurant { get; set; }
+        public DateTime OrderDate { get; set; }
     }
 }

@@ -9,8 +9,8 @@ namespace exam2PArt.Models
     public class Restaurants
     {
         [Key]
-        public string Id { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
-        public List<Dishes> Menu { get; set; }
+        public List<Dishes> Dishes { get; set; }
     }
 }
